@@ -38,6 +38,12 @@ class User(db.Model, UserMixin):
     def check_password_correction(self, attempted_password):
         return bcrypt.check_password_hash(self.password_hash, attempted_password)  # 解碼查看是否密碼相同
 
+    def can_purchase(self, item_obj):
+        return self.budget >= item_obj.price
+
+    def can_sell(self, item_obj):
+        return item_obj in self.items  # 確認此商品使用者是否擁有
+
 
 class Item(db.Model):
     id = db.Column(db.Integer(), primary_key=True)
@@ -49,3 +55,13 @@ class Item(db.Model):
 
     def __repr__(self):
         return f'Item {self.name}'
+
+    def buy(self, user):
+        self.owner = user.id
+        user.budget -= self.price
+        db.session.commit()
+
+    def sell(self, user):
+        self.owner = None  # 商品所有權變成所有人
+        user.budget += self.price
+        db.session.commit()
